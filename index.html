@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pixel Quest – Path to Victory</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ─── SCREENS ─────────────────────────────────────────── -->
+
+  <!-- Start Screen -->
+  <div id="screen-start" class="screen active">
+    <div class="stars"></div>
+    <div class="start-content">
+      <div class="title-box">
+        <div class="title-pixel">PIXEL QUEST</div>
+        <div class="subtitle-pixel">— Path to Victory —</div>
+      </div>
+      <div class="menu-btns">
+        <button class="btn-pixel btn-primary" id="btn-play">▶ PLAY</button>
+        <button class="btn-pixel btn-secondary" id="btn-settings">⚙ SETTINGS</button>
+      </div>
+      <div class="version-tag">v1.0 · HTML5 Canvas</div>
+    </div>
+  </div>
+
+  <!-- Settings Screen -->
+  <div id="screen-settings" class="screen">
+    <div class="panel-pixel">
+      <h2 class="panel-title">⚙ SETTINGS</h2>
+      <div class="setting-row">
+        <label>SOUND</label>
+        <button class="btn-toggle" id="toggle-sound">ON</button>
+      </div>
+      <div class="setting-row">
+        <label>FULLSCREEN</label>
+        <button class="btn-toggle" id="toggle-fs">OFF</button>
+      </div>
+      <button class="btn-pixel btn-secondary" id="btn-settings-back">← BACK</button>
+    </div>
+  </div>
+
+  <!-- Character Select Screen -->
+  <div id="screen-charselect" class="screen">
+    <div class="panel-pixel wide">
+      <h2 class="panel-title">SELECT YOUR HERO</h2>
+      <div class="name-input-row">
+        <label for="player-name">YOUR NAME:</label>
+        <input type="text" id="player-name" maxlength="12" placeholder="HERO" autocomplete="off" />
+      </div>
+      <div class="char-cards">
+        <div class="char-card selected" data-char="boy" id="card-boy">
+          <canvas id="preview-boy" width="64" height="64"></canvas>
+          <div class="char-label">BOY</div>
+          <div class="char-desc">Fast · Agile</div>
+        </div>
+        <div class="char-card" data-char="girl" id="card-girl">
+          <canvas id="preview-girl" width="64" height="64"></canvas>
+          <div class="char-label">GIRL</div>
+          <div class="char-desc">Strong · Resilient</div>
+        </div>
+      </div>
+      <button class="btn-pixel btn-primary" id="btn-start-game">START QUEST ▶</button>
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="screen-game" class="screen">
+    <!-- HUD -->
+    <div id="hud">
+      <div id="hud-left">
+        <div id="hud-name">HERO</div>
+        <div id="hud-lives">
+          <span class="heart">❤</span><span class="heart">❤</span><span class="heart">❤</span>
+        </div>
+        <div id="hud-health-wrap">
+          <div id="hud-health-bar"></div>
+        </div>
+      </div>
+      <div id="hud-center">
+        <div id="hud-score">SCORE: 0</div>
+      </div>
+      <div id="hud-right">
+        <button id="btn-pause">⏸</button>
+      </div>
+    </div>
+
+    <!-- Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Mobile Controls -->
+    <div id="mobile-controls">
+      <div id="mc-left-group">
+        <button class="mc-btn" id="mc-left">◀</button>
+        <button class="mc-btn" id="mc-right">▶</button>
+      </div>
+      <div id="mc-right-group">
+        <button class="mc-btn mc-action" id="mc-attack">⚔</button>
+        <button class="mc-btn mc-jump" id="mc-jump">▲</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause Screen -->
+  <div id="screen-pause" class="screen overlay">
+    <div class="panel-pixel">
+      <h2 class="panel-title">⏸ PAUSED</h2>
+      <button class="btn-pixel btn-primary" id="btn-resume">▶ RESUME</button>
+      <button class="btn-pixel btn-secondary" id="btn-restart">↺ RESTART</button>
+      <button class="btn-pixel btn-secondary" id="btn-quit">⏏ QUIT</button>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="screen-gameover" class="screen">
+    <div class="panel-pixel">
+      <div class="go-title">GAME OVER</div>
+      <div class="go-score" id="go-score">SCORE: 0</div>
+      <button class="btn-pixel btn-primary" id="btn-retry">↺ RETRY</button>
+      <button class="btn-pixel btn-secondary" id="btn-go-quit">⏏ MENU</button>
+    </div>
+  </div>
+
+  <!-- Victory Screen -->
+  <div id="screen-victory" class="screen">
+    <div class="victory-stars"></div>
+    <div class="panel-pixel">
+      <div class="vic-title">✦ VICTORY ✦</div>
+      <div class="vic-name" id="vic-name">HERO</div>
+      <div class="vic-score" id="vic-score">SCORE: 0</div>
+      <button class="btn-pixel btn-primary" id="btn-play-again">↺ PLAY AGAIN</button>
+      <button class="btn-pixel btn-secondary" id="btn-vic-quit">⏏ MENU</button>
+    </div>
+  </div>
+
+  <!-- Scripts (order matters) -->
+  <script src="js/utils.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/controls.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/enemy.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

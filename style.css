@@ -1,0 +1,414 @@
+/* ─── RESET & BASE ───────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sky:   #1a1a2e;
+  --sky2:  #16213e;
+  --gold:  #f5c518;
+  --gold2: #e8a000;
+  --red:   #e84040;
+  --green: #3ddc84;
+  --blue:  #4fc3f7;
+  --white: #f0ece4;
+  --gray:  #8a8a9a;
+  --panel: rgba(10,10,30,0.92);
+  --border:#4a4a7a;
+  --pixel: 'Press Start 2P', monospace;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--sky);
+  font-family: var(--pixel);
+  color: var(--white);
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ─── SCREENS ────────────────────────────────────────────── */
+.screen {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.35s ease;
+  z-index: 10;
+}
+.screen.active {
+  opacity: 1; pointer-events: all;
+}
+.screen.overlay {
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(3px);
+}
+
+/* ─── START SCREEN ───────────────────────────────────────── */
+#screen-start {
+  background: linear-gradient(160deg, #0d0d1a 0%, #1a1040 50%, #0a1628 100%);
+  flex-direction: column;
+}
+
+.stars {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 60%, #adf 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 10%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 45%, #fdf 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 80%, #aff 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 20% 80%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 35%, #ffd 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 70%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 25%, #adf 0%, transparent 100%),
+    radial-gradient(1px 1px at 5%  55%, #fff 0%, transparent 100%);
+  animation: twinkle 4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes twinkle {
+  from { opacity: 0.6; }
+  to   { opacity: 1; }
+}
+
+.start-content {
+  display: flex; flex-direction: column; align-items: center; gap: 40px;
+  z-index: 1;
+}
+
+.title-box {
+  text-align: center;
+  animation: floatTitle 3s ease-in-out infinite;
+}
+@keyframes floatTitle {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+.title-pixel {
+  font-size: clamp(24px, 6vw, 52px);
+  color: var(--gold);
+  text-shadow:
+    4px 4px 0 var(--gold2),
+    0 0 30px rgba(245,197,24,0.6),
+    0 0 60px rgba(245,197,24,0.3);
+  letter-spacing: 4px;
+  margin-bottom: 12px;
+}
+.subtitle-pixel {
+  font-size: clamp(10px, 2vw, 14px);
+  color: var(--blue);
+  letter-spacing: 3px;
+  text-shadow: 0 0 10px var(--blue);
+}
+
+.menu-btns {
+  display: flex; flex-direction: column; gap: 16px; align-items: center;
+}
+
+.version-tag {
+  font-size: 8px; color: var(--gray); letter-spacing: 2px;
+}
+
+/* ─── BUTTONS ────────────────────────────────────────────── */
+.btn-pixel {
+  font-family: var(--pixel);
+  font-size: clamp(10px, 2vw, 13px);
+  padding: 14px 32px;
+  border: 3px solid;
+  cursor: pointer;
+  letter-spacing: 2px;
+  transition: transform 0.08s, box-shadow 0.08s;
+  min-width: 220px;
+  position: relative;
+  outline: none;
+}
+.btn-pixel::after {
+  content: ''; position: absolute;
+  inset: 3px; border: 1px solid rgba(255,255,255,0.15);
+  pointer-events: none;
+}
+.btn-pixel:active { transform: translateY(3px); box-shadow: none !important; }
+
+.btn-primary {
+  background: var(--gold);
+  border-color: var(--gold2);
+  color: #1a0a00;
+  box-shadow: 0 6px 0 var(--gold2), 0 0 20px rgba(245,197,24,0.4);
+}
+.btn-primary:hover {
+  background: #ffd740;
+  box-shadow: 0 6px 0 var(--gold2), 0 0 35px rgba(245,197,24,0.7);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--white);
+  box-shadow: 0 6px 0 #1a1a3a;
+}
+.btn-secondary:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+  box-shadow: 0 6px 0 #1a1a3a, 0 0 15px rgba(79,195,247,0.3);
+  transform: translateY(-2px);
+}
+
+.btn-toggle {
+  font-family: var(--pixel);
+  font-size: 10px;
+  padding: 8px 18px;
+  background: var(--green);
+  border: 2px solid #2aa860;
+  color: #001a08;
+  cursor: pointer;
+  transition: all 0.1s;
+  letter-spacing: 1px;
+}
+.btn-toggle.off {
+  background: var(--gray);
+  border-color: #555;
+  color: var(--white);
+}
+
+/* ─── PANEL ──────────────────────────────────────────────── */
+.panel-pixel {
+  background: var(--panel);
+  border: 3px solid var(--border);
+  padding: 36px 40px;
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  box-shadow: 0 0 0 6px #0a0a1a, 0 0 40px rgba(74,74,122,0.5), inset 0 0 30px rgba(255,255,255,0.02);
+  max-width: 90vw;
+  position: relative;
+}
+.panel-pixel::before {
+  content: '';
+  position: absolute; inset: 6px;
+  border: 1px solid rgba(255,255,255,0.05);
+  pointer-events: none;
+}
+.panel-pixel.wide { min-width: min(520px, 90vw); }
+
+.panel-title {
+  font-size: clamp(12px, 3vw, 16px);
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-align: center;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 16px;
+  width: 100%;
+}
+
+/* ─── SETTINGS ───────────────────────────────────────────── */
+.setting-row {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; gap: 24px;
+  font-size: 10px; letter-spacing: 2px;
+  color: var(--gray);
+}
+
+/* ─── CHARACTER SELECT ───────────────────────────────────── */
+.name-input-row {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  font-size: 9px; letter-spacing: 2px; color: var(--gray);
+  width: 100%;
+}
+#player-name {
+  font-family: var(--pixel);
+  font-size: 13px;
+  padding: 10px 16px;
+  background: #0a0a1e;
+  border: 2px solid var(--border);
+  color: var(--gold);
+  letter-spacing: 3px;
+  width: 100%;
+  text-align: center;
+  outline: none;
+}
+#player-name:focus { border-color: var(--gold); box-shadow: 0 0 15px rgba(245,197,24,0.3); }
+
+.char-cards {
+  display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;
+}
+.char-card {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 16px 20px;
+  border: 3px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+  background: rgba(255,255,255,0.02);
+}
+.char-card:hover { border-color: var(--blue); transform: translateY(-3px); }
+.char-card.selected {
+  border-color: var(--gold);
+  background: rgba(245,197,24,0.08);
+  box-shadow: 0 0 20px rgba(245,197,24,0.3);
+}
+.char-card canvas { image-rendering: pixelated; width: 80px; height: 80px; }
+.char-label { font-size: 11px; color: var(--white); letter-spacing: 2px; }
+.char-desc   { font-size: 7px;  color: var(--gray); }
+
+/* ─── GAME SCREEN ────────────────────────────────────────── */
+#screen-game {
+  background: #000;
+  flex-direction: column;
+  padding: 0;
+  z-index: 1;
+}
+
+#game-canvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  max-width: 100%;
+}
+
+/* ─── HUD ────────────────────────────────────────────────── */
+#hud {
+  position: fixed; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+  z-index: 20;
+  pointer-events: none;
+  gap: 10px;
+}
+#hud-left  { display: flex; flex-direction: column; gap: 4px; pointer-events: none; min-width: 120px; }
+#hud-center{ text-align: center; flex: 1; }
+#hud-right { pointer-events: all; }
+
+#hud-name  { font-size: 8px; color: var(--gold); letter-spacing: 2px; text-shadow: 1px 1px 0 #000; }
+#hud-lives { display: flex; gap: 4px; }
+.heart     { font-size: 14px; text-shadow: 0 0 8px #e84040; transition: all 0.3s; }
+.heart.lost{ opacity: 0.2; filter: grayscale(1); }
+
+#hud-health-wrap {
+  width: 110px; height: 8px;
+  background: #1a0000; border: 1px solid #500;
+}
+#hud-health-bar {
+  height: 100%; width: 100%;
+  background: linear-gradient(to right, #e84040, #ff6b6b);
+  transition: width 0.2s ease;
+}
+
+#hud-score { font-size: 9px; color: var(--gold); letter-spacing: 2px; text-shadow: 1px 1px 0 #000; }
+
+#btn-pause {
+  font-family: var(--pixel);
+  font-size: 14px;
+  background: rgba(0,0,0,0.5);
+  border: 2px solid var(--border);
+  color: var(--white);
+  cursor: pointer;
+  padding: 6px 10px;
+}
+
+/* ─── MOBILE CONTROLS ────────────────────────────────────── */
+#mobile-controls {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: none;
+  justify-content: space-between;
+  padding: 12px 20px 20px;
+  z-index: 20;
+  pointer-events: none;
+}
+#mc-left-group, #mc-right-group {
+  display: flex; gap: 10px; pointer-events: all;
+}
+.mc-btn {
+  width: 58px; height: 58px;
+  background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.25);
+  border-radius: 50%;
+  color: var(--white);
+  font-size: 18px;
+  cursor: pointer;
+  font-family: var(--pixel);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+  transition: background 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mc-btn:active, .mc-btn.pressed {
+  background: rgba(255,255,255,0.3);
+  border-color: var(--gold);
+}
+.mc-jump   { background: rgba(61,220,132,0.2); border-color: var(--green); }
+.mc-action { background: rgba(232,64,64,0.2);  border-color: var(--red);   }
+
+/* Show mobile controls on touch devices / small screens */
+@media (max-width: 768px), (hover: none) {
+  #mobile-controls { display: flex; }
+  #hud { padding: 6px 10px; }
+  .heart { font-size: 12px; }
+  #hud-health-wrap { width: 80px; }
+}
+
+/* ─── GAME OVER ──────────────────────────────────────────── */
+#screen-gameover {
+  background: radial-gradient(ellipse at center, #2a0000 0%, #0d0005 100%);
+}
+.go-title {
+  font-size: clamp(20px, 6vw, 36px);
+  color: var(--red);
+  text-shadow: 3px 3px 0 #800, 0 0 30px rgba(232,64,64,0.8);
+  letter-spacing: 4px;
+  animation: pulse 1s ease-in-out infinite alternate;
+}
+@keyframes pulse { from { opacity: 0.7; } to { opacity: 1; } }
+.go-score { font-size: 10px; color: var(--gray); letter-spacing: 2px; }
+
+/* ─── VICTORY ────────────────────────────────────────────── */
+#screen-victory {
+  background: radial-gradient(ellipse at center, #001a00 0%, #000d1a 100%);
+}
+.victory-stars {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 15% 25%, #ffd700 0%, transparent 100%),
+    radial-gradient(2px 2px at 35% 65%, #fff 0%, transparent 100%),
+    radial-gradient(2px 2px at 60% 20%, #ffd700 0%, transparent 100%),
+    radial-gradient(2px 2px at 80% 50%, #fff 0%, transparent 100%),
+    radial-gradient(2px 2px at 50% 80%, #ffd700 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 45%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 75%, #ffd700 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 15%, #fff 0%, transparent 100%);
+  animation: victoryStars 1.5s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes victoryStars {
+  from { opacity: 0.5; transform: scale(1); }
+  to   { opacity: 1;   transform: scale(1.02); }
+}
+
+.vic-title {
+  font-size: clamp(18px, 5vw, 30px);
+  color: var(--gold);
+  text-shadow: 3px 3px 0 var(--gold2), 0 0 30px rgba(245,197,24,0.9);
+  letter-spacing: 4px;
+  animation: floatTitle 2s ease-in-out infinite;
+}
+.vic-name  { font-size: 12px; color: var(--green); letter-spacing: 3px; }
+.vic-score { font-size: 10px; color: var(--gray);  letter-spacing: 2px; }
+
+/* ─── TRANSITIONS ────────────────────────────────────────── */
+.screen { transition: opacity 0.35s ease; }
+
+/* ─── LANDSCAPE HINT ─────────────────────────────────────── */
+#landscape-hint {
+  display: none;
+  position: fixed; inset: 0; z-index: 9999;
+  background: #000;
+  align-items: center; justify-content: center; flex-direction: column; gap: 20px;
+  font-size: 11px; letter-spacing: 2px; color: var(--white); text-align: center;
+  padding: 20px;
+}
+#landscape-hint .rotate-icon { font-size: 48px; animation: rotate 2s linear infinite; }
+@keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+@media (max-width: 600px) and (orientation: portrait) {
+  /* Optionally show landscape hint */
+}
