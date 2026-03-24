@@ -28,9 +28,9 @@ class Player {
 
     // Attack
     this.attackCooldown = 0;
-    this.ATTACK_CD      = 28;   // frames between attacks
+    this.ATTACK_CD      = 12;   // frames between attacks
     this.attackDuration = 0;
-    this.ATTACK_DUR     = 18;   // frames attack hitbox lasts
+    this.ATTACK_DUR     = 10;   // frames attack hitbox lasts
     this.attackBox      = null;
     this.attackDmg      = charType === 'girl' ? 25 : 20;
 
@@ -40,14 +40,52 @@ class Player {
 
     // Visual effects
     this.flashTimer = 0;
+    
+    this.jumpBuffer = 0;
+    this.coyoteTime = 0;
+
+    // ── POWER-UPS ─────────────────────────────────────
+    this.powerUps = {};
+    this.powerTimers = {};
+    this.canDoubleJump = false;
+    this.jumpCount = 0;
+    this.speedMultiplier = 1;
+    this.isInvincible = false;
+
+    // ── COMBO SYSTEM ─────────────────────────────────
+    this.combo = 0;
+    this.lastAttackTime = 0;
   }
 
   get hitbox() { return { x: this.x, y: this.y, w: this.w, h: this.h }; }
 
+  applyPowerUp(type) {
+    this.powerUps[type] = true;
+    this.powerTimers[type] = Date.now();
+
+    if (type === Utils.POWERUPS.DOUBLE_JUMP) this.canDoubleJump = true;
+    if (type === Utils.POWERUPS.SPEED) this.speedMultiplier = 1.8;
+    if (type === Utils.POWERUPS.INVINCIBLE) this.isInvincible = true;
+  }
+
+  updatePowerUps() {
+    const now = Date.now();
+
+    for (let type in this.powerUps) {
+      if (now - this.powerTimers[type] > Utils.POWERUP_DURATION[type]) {
+        delete this.powerUps[type];
+
+        if (type === Utils.POWERUPS.DOUBLE_JUMP) this.canDoubleJump = false;
+        if (type === Utils.POWERUPS.SPEED) this.speedMultiplier = 1;
+        if (type === Utils.POWERUPS.INVINCIBLE) this.isInvincible = false;
+      }
+    }
+  }
   // ── UPDATE ────────────────────────────────────────────
   update(controls, platforms) {
     if (this.state === 'dead') return;
-
+    
+    this.updatePowerUps();
     // Timers
     if (this.attackCooldown  > 0) this.attackCooldown--;
     if (this.attackDuration  > 0) this.attackDuration--;
@@ -73,29 +111,73 @@ class Player {
       }
     }
 
+    // ── Jump Buffer & Coyote Time ─────────────────────
+
+    // Ground tracking
+    if (this.onGround) {
+      this.coyoteTime = 6;
+      this.jumpCount = 0;
+
+    } else {
+      this.coyoteTime--;
+    }
+
+    // Input buffer
+    if (controls.jumpPressed) {
+      this.jumpBuffer = 6;
+    } else {
+      this.jumpBuffer--;
+    }
+
     // ── Jump ──────────────────────────────────────────
-    if (controls.jumpPressed && this.onGround) {
+    if (
+      (this.jumpBuffer > 0 && this.coyoteTime > 0) ||
+      (this.canDoubleJump && this.jumpCount < 2 && this.jumpBuffer > 0)
+    ) {
       this.vy = Physics.JUMP_FORCE;
       this.onGround = false;
+
+      this.jumpBuffer = 0;
+      this.coyoteTime = 0;
+
+      this.jumpCount++;
+
+      Utils.spawnParticles(this.x + this.w / 2, this.y + this.h, "jump");
+
       SoundFX.play('jump');
     }
 
     // ── Attack ──────────────────────────────────────
     if (controls.attackPressed && this.attackCooldown === 0) {
+      const now = Date.now();
+
+      if (now - this.lastAttackTime < 400) {
+        this.combo++;
+      } else {
+        this.combo = 1;
+      }
+
+      this.lastAttackTime = now;
+
       this.attackCooldown  = this.ATTACK_CD;
       this.attackDuration  = this.ATTACK_DUR;
       this.state = 'attack';
       this.frame = 0;
+
       SoundFX.play('attack');
 
-      // Build attack hitbox in front of player
       const reach = 44;
+
       this.attackBox = {
         x: this.dir === 1 ? this.x + this.w : this.x - reach,
         y: this.y + 8,
         w: reach,
         h: this.h - 16,
+        dmg: this.attackDmg * this.combo
       };
+
+      Utils.spawnParticles(this.x + this.w / 2, this.y, "hit");
+
     } else if (this.attackDuration === 0) {
       this.attackBox = null;
     }
@@ -130,7 +212,7 @@ class Player {
 
   // ── TAKE DAMAGE ───────────────────────────────────────
   takeDamage(amount, fromX) {
-    if (this.iframes > 0) return false;
+    if (this.iframes > 0 || this.isInvincible) return false;
     this.hp = Math.max(0, this.hp - amount);
     this.iframes  = this.IFRAMES;
     this.flashTimer = 20;

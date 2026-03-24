@@ -22,6 +22,7 @@ const Game = {
   enemies:  [],
   platforms: [],
   coins:    [],
+  powerUps: [],
   flagX:    0,
 
   // Particle system
@@ -102,8 +103,33 @@ const Game = {
       { x: 2800, y: ground - 150, w: 140, type: 'grass' },
       { x: 3000, y: ground - 100, w: 150, type: 'stone' },
     ];
-    elevated.forEach(p => {
-      this.platforms.push({ ...p, h: 20 });
+    elevated.forEach((p, i) => {
+      let extra = {};
+
+      if (i % 6 === 0) {
+        extra = { type: 'break', timer: 0, active: true };
+
+      } else if (i % 6 === 1) {
+        extra = {
+          type: 'moving',
+          baseX: p.x,
+          range: 80,
+          speed: 1.5,
+          dir: 1
+        };
+
+      } else if (i % 6 === 2) {
+        extra = { type: 'lava' };
+
+      } else if (i % 6 === 3) {
+        extra = { type: 'spike' };
+      }
+
+      this.platforms.push({
+        ...p,
+        h: 20,
+        ...extra
+      });
     });
 
     // ── Flag / Goal ──
@@ -128,7 +154,11 @@ const Game = {
     ];
     enemyDefs.forEach(e => {
       this.enemies.push(new Enemy(e.x, ground - ENEMY_TYPES[e.type].h - 2, e.type));
+      // ── Boss ──
     });
+
+    // ── Boss (ONLY ONCE)
+    this.enemies.push(new BossEnemy(600, ground - 120));
 
     // ── Coins ──
     for (let i = 0; i < 40; i++) {
@@ -136,6 +166,18 @@ const Game = {
       // Some on ground, some on platforms
       const py = i % 3 === 0 ? ground - 45 : ground - 120 - Utils.randInt(0, 80);
       this.coins.push({ x: cx, y: py, r: 10, collected: false });
+    }
+    // ── Power-ups ──
+    const types = Object.values(Utils.POWERUPS);
+
+    for (let i = 0; i < 10; i++) {
+      this.powerUps.push({
+        x: 300 + i * 250,
+        y: ground - 150 - Utils.randInt(0, 80),
+        w: 20,
+        h: 20,
+        type: types[i % types.length]
+      });
     }
   },
 
@@ -193,6 +235,36 @@ const Game = {
     // Player update
     p.update(Controls, this.platforms);
 
+    // ── Spike damage ──
+    // ── Spike damage (reliable) ──
+    // ── Spike damage (correct hitbox) ──
+    this.platforms.forEach(pl => {
+      if (pl.type === 'spike') {
+
+        // Create spike hitbox ABOVE platform
+        const spikeHitbox = {
+          x: pl.x,
+          y: pl.y - 12,   // 🔥 move hitbox up
+          w: pl.w,
+          h: 12           // height of spikes
+        };
+
+        if (Utils.rectsOverlap(p.hitbox, spikeHitbox) && !p.isInvincible) {
+          p.takeDamage(999, pl.x + pl.w / 2);
+
+          Utils.spawnParticles(p.x + p.w / 2, p.y, "hit");
+          this.screenShake(6);
+        }
+      }
+    });
+    // ── Lava damage ──
+    this.platforms.forEach(pl => {
+      if (pl.type === 'lava') {
+        if (Utils.rectsOverlap(p.hitbox, pl)) {
+          p.takeDamage(999, p.x);
+        }
+      }
+    });
     // Keep player in world bounds
     p.x = Utils.clamp(p.x, 0, this.worldW - p.w);
 
@@ -200,6 +272,46 @@ const Game = {
     const targetCamX = p.x + p.w / 2 - this.VW / 2;
     this.camX = Utils.lerp(this.camX, targetCamX, 0.1);
     this.camX = Utils.clamp(this.camX, 0, this.worldW - this.VW);
+
+    // ── Vanishing Platforms ─────────────────────────────
+    this.platforms.forEach(p => {
+      if (p.type === 'vanish') {
+        p.timer++;
+
+        if (p.timer > 120) p.timer = 0; // 2 sec loop
+
+        p.active = p.timer < 60; // 1 sec visible, 1 sec invisible
+      } else {
+        p.active = true;
+      }
+    });
+
+    // ── Platform Behaviors ─────────────────────────────
+    this.platforms.forEach(p => {
+
+      // 💥 Breakable
+      if (p.type === 'break') {
+        if (p.timer > 0) {
+          p.timer++;
+          if (p.timer > 60) p.active = false; // disappear after 1 sec
+        }
+      }
+
+      // 🌀 Moving
+      if (p.type === 'moving') {
+        p.x += p.speed * p.dir;
+
+        if (p.x > p.baseX + p.range) p.dir = -1;
+        if (p.x < p.baseX - p.range) p.dir = 1;
+      }
+
+      // ⬇ Falling platforms
+      if (p.type === 'falling' && p.fallTimer) {
+        if (Date.now() - p.fallTimer > 800) {
+          p.y += 6;
+        }
+      }
+    });
 
     // ── Enemy updates ───────────────────────────────────
     this.enemies.forEach(e => {
@@ -239,6 +351,17 @@ const Game = {
       }
     });
 
+    // ── Power-up collection ──
+    this.powerUps.forEach((pw, i) => {
+      if (Utils.rectsOverlap(p, pw)) {
+        p.applyPowerUp(pw.type);
+
+        SoundFX.play('powerup');
+        this.spawnParticles(pw.x, pw.y, '#00ffff', 10);
+
+        this.powerUps.splice(i, 1);
+      }
+    });
     // ── Screen shake ────────────────────────────────────
     if (this.shakeDuration > 0) {
       this.shakeDuration--;
@@ -246,13 +369,7 @@ const Game = {
     }
 
     // ── Update particles ────────────────────────────────
-    this.particles = this.particles.filter(pt => {
-      pt.x += pt.vx;
-      pt.y += pt.vy;
-      pt.vy += 0.15;
-      pt.life -= pt.decay;
-      return pt.life > 0;
-    });
+    Utils.updateParticles();
 
     // ── Win / Lose checks ───────────────────────────────
     // Victory: reach flag
@@ -309,7 +426,20 @@ const Game = {
     this.platforms.forEach(p => {
       const screenX = p.x - this.camX;
       if (screenX > VW + 100 || screenX + p.w < -100) return;
-      Sprites.drawPlatform(ctx, p.x, p.y, p.w, p.h, p.type);
+      if (p.type === 'spike') {
+        ctx.fillStyle = '#ff4444';
+
+        for (let i = 0; i < p.w; i += 10) {
+          ctx.beginPath();
+          ctx.moveTo(p.x + i, p.y + p.h);
+          ctx.lineTo(p.x + i + 5, p.y);
+          ctx.lineTo(p.x + i + 10, p.y + p.h);
+          ctx.fill();
+        }
+
+      } else {
+        Sprites.drawPlatform(ctx, p.x, p.y, p.w, p.h, p.type);
+      }
     });
 
     // ── Flag / Goal ──────────────────────────────────────
@@ -325,6 +455,19 @@ const Game = {
       Sprites.drawCoin(ctx, c.x, c.y + bob, c.r, this.tick);
     });
 
+    // ── Power-ups ────────────────────────
+    this.powerUps.forEach(pw => {
+      const screenX = pw.x - this.camX;
+      if (screenX > VW + 50 || screenX < -50) return;
+
+      ctx.fillStyle =
+        pw.type === 'double_jump' ? '#00ffcc' :
+        pw.type === 'speed' ? '#00aaff' :
+        '#ffff00';
+
+      ctx.fillRect(pw.x, pw.y, pw.w, pw.h);
+    });
+
     // ── Enemies ──────────────────────────────────────────
     this.enemies.forEach(e => {
       const screenX = e.x - this.camX;
@@ -336,17 +479,7 @@ const Game = {
     this.player.draw(ctx);
 
     // ── Particles ────────────────────────────────────────
-    this.particles.forEach(pt => {
-      ctx.save();
-      ctx.globalAlpha = pt.life;
-      ctx.fillStyle = pt.color;
-      ctx.fillRect(
-        Math.round(pt.x - pt.size / 2),
-        Math.round(pt.y - pt.size / 2),
-        Math.round(pt.size), Math.round(pt.size)
-      );
-      ctx.restore();
-    });
+    Utils.drawParticles(ctx, { x: this.camX, y: 0 });
 
     ctx.restore();
 

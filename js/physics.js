@@ -19,9 +19,10 @@ const Physics = {
   // Move entity by velocity and resolve collisions against platforms array
   // Returns { hitLeft, hitRight, hitTop, hitBottom }
   moveAndCollide(entity, platforms) {
+    entity.hitSpike = false;
     let hitLeft = false, hitRight = false, hitTop = false, hitBottom = false;
     entity.onGround = false;
-
+    entity.onPlatform = null; // track which platform player is standing on
     // ── Horizontal ──────────────────────────────────────
     entity.x += entity.vx;
     for (const p of platforms) {
@@ -35,17 +36,41 @@ const Physics = {
     entity.y += entity.vy;
     for (const p of platforms) {
       if (!Utils.rectsOverlap(entity, p)) continue;
+
       if (entity.vy > 0) {
         entity.y = p.y - entity.h;
         entity.onGround = true;
+        entity.onPlatform = p;
         hitBottom = true;
+
+        // ── FALLING PLATFORM TRIGGER ──
+        if (p.type === "falling") {
+          if (!p.fallTimer) p.fallTimer = Date.now();
+        }
+
+        // ── SPIKE DETECTION ──
+        if (p.type === "spike") {
+          entity.hitSpike = true;
+        }
+
       } else if (entity.vy < 0) {
         entity.y = p.y + p.h;
         hitTop = true;
       }
+
       entity.vy = 0;
     }
 
+    // ── MOVING PLATFORM CARRY ─────────────────────
+    if (entity.onPlatform && entity.onPlatform.type === "moving") {
+      const p = entity.onPlatform;
+
+      // Apply platform movement to player
+      entity.x += p.vx || 0;
+      entity.y += p.vy || 0;
+    }
+
+  // ── SPIKE DETECTION ──
     return { hitLeft, hitRight, hitTop, hitBottom };
   },
 

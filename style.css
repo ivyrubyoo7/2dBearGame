@@ -309,7 +309,7 @@ html, body {
 /* ─── MOBILE CONTROLS ────────────────────────────────────── */
 #mobile-controls {
   position: fixed; bottom: 0; left: 0; right: 0;
-  display: none;
+  display: flex;
   justify-content: space-between;
   padding: 12px 20px 20px;
   z-index: 20;
@@ -341,7 +341,9 @@ html, body {
 
 /* Show mobile controls on touch devices / small screens */
 @media (max-width: 768px), (hover: none) {
-  #mobile-controls { display: flex; }
+  #mobile-controls { 
+    display: flex; 
+  }
   #hud { padding: 6px 10px; }
   .heart { font-size: 12px; }
   #hud-health-wrap { width: 80px; }

@@ -1,17 +1,18 @@
 // ─── ENEMY.JS ─────────────────────────────────────────────
-// Enemy entity with AI patrol, aggro, attack, and three types
 
-  // ─── ENEMY.JS ─────────────────────────────────────────────
-
-// 🔥 Load GIF
+// 🔥 Enemy GIF
 const enemyImg = new Image();
 enemyImg.src = "assets/pmob.gif";
+
+// 🔥 Boss Image (YOUR IMAGE)
+const bossImg = new Image();
+bossImg.src = "assets/The_Man_From_The_Shadow_29.webp";
 
 enemyImg.onload = () => {
   console.log("Enemy GIF loaded ✅");
 };
 
-// Enemy types (logic only, no sprite draw now)
+// ─── ENEMY TYPES ─────────────────────────────────────────
 const ENEMY_TYPES = {
   slime: {
     hp: 40, speed: 1.2, dmg: 10, score: 50,
@@ -30,17 +31,23 @@ const ENEMY_TYPES = {
   },
 };
 
+ENEMY_TYPES.ranged = {
+  hp: 50, speed: 1.0, dmg: 12, score: 120,
+  w: 40, h: 40, range: 260, atkRange: 200,
+  atkCd: 80, jumpForce: -8,
+};
+
+
+// ─── BASE ENEMY ─────────────────────────────────────────
 class Enemy {
   constructor(x, y, type = 'slime') {
     const cfg = ENEMY_TYPES[type] || ENEMY_TYPES.slime;
-
     Object.assign(this, cfg);
 
     this.type = type;
     this.x = x;
     this.y = y;
 
-    // 🔥 FORCE SIZE FOR GIF (VERY IMPORTANT)
     this.w = 80;
     this.h = 80;
 
@@ -52,7 +59,6 @@ class Enemy {
 
     this.maxHp = this.hp;
 
-    // AI
     this.state = 'patrol';
     this.patrolLeft  = x - 80;
     this.patrolRight = x + 80;
@@ -60,30 +66,21 @@ class Enemy {
     this.atkCooldown = 0;
     this.hurtTimer   = 0;
 
-    // Animation
-    this.frame     = 0;
+    this.frame = 0;
     this.frameTick = 0;
 
     this.dead = false;
     this.deathTimer = 0;
+
+    this.projectiles = [];
   }
 
-  // 🔥 Dynamic hitbox
   get hitbox() {
-    return {
-      x: this.x,
-      y: this.y,
-      w: this.w,
-      h: this.h
-    };
+    return { x: this.x, y: this.y, w: this.w, h: this.h };
   }
 
-  // ── UPDATE ─────────────────────────────
   update(player, platforms) {
-    if (this.dead) {
-      this.deathTimer++;
-      return;
-    }
+    if (this.dead) return;
 
     if (this.atkCooldown > 0) this.atkCooldown--;
     if (this.hurtTimer > 0) {
@@ -95,7 +92,6 @@ class Enemy {
     const ex = this.x + this.w / 2;
     const dist = Math.abs(px - ex);
 
-    // AI
     if (dist < this.range && player.state !== 'dead') {
       this.state = 'chase';
     } else if (this.state === 'chase' && dist > this.range * 1.5) {
@@ -107,129 +103,143 @@ class Enemy {
       this.dir = dx > 0 ? 1 : -1;
       this.vx = this.dir * this.speed;
 
-      // Attack
-      const verticalDist = Math.abs((player.y + player.h/2) - (this.y + this.h/2));
-
-      if (
-        dist < this.atkRange &&
-        verticalDist < 40 &&   // 🔥 CONTROL HEIGHT RANGE HERE
-        this.atkCooldown === 0
-      ){
-        this.state = 'attack';
+      if (dist < this.atkRange && this.atkCooldown === 0) {
         this.atkCooldown = this.atkCd;
 
-        const result = player.takeDamage(this.dmg, this.x + this.w / 2);
-        if (result) {
-          Game.screenShake(6);
-          SoundFX.play('playerHurt');
+        if (player.takeDamage(this.dmg, this.x + this.w / 2)) {
+          Utils.spawnBlood(player.x, player.y);
+          Game.screenShake(5);
         }
       }
-    } else {
-      // Patrol
-      if (ex < this.patrolLeft)  this.dir = 1;
-      if (ex > this.patrolRight) this.dir = -1;
-      this.vx = this.dir * this.speed * 0.6;
     }
 
-    // Physics
     Physics.applyGravity(this);
     Physics.moveAndCollide(this, platforms);
-
-    // Edge detection
-    if (this.state === 'patrol' && this.onGround) {
-      let overEdge = true;
-      const testX = this.dir === 1 ? this.x + this.w + 4 : this.x - 4;
-
-      for (const p of platforms) {
-        if (
-          testX >= p.x &&
-          testX <= p.x + p.w &&
-          this.y + this.h >= p.y &&
-          this.y + this.h <= p.y + p.h + 4
-        ) {
-          overEdge = false;
-          break;
-        }
-      }
-
-      if (overEdge) this.dir *= -1;
-    }
-
-    // Animation tick
-    this.frameTick++;
-    if (this.frameTick >= 5) {
-      this.frame++;
-      this.frameTick = 0;
-    }
   }
 
-  // ── DAMAGE ─────────────────────────────
   takeDamage(amount, fromX) {
     if (this.dead) return;
 
-    this.hp = Math.max(0, this.hp - amount);
+    this.hp -= amount;
     this.hurtTimer = 12;
 
-    Physics.applyKnockback(this, fromX, 5, 3);
-    SoundFX.play('enemyHurt');
+    Utils.spawnBlood(this.x + this.w / 2, this.y + this.h / 2);
 
     if (this.hp <= 0) {
       this.dead = true;
-      this.deathTimer = 0;
-      SoundFX.play('kill');
+      Utils.spawnBlood(this.x, this.y);
       return true;
     }
 
     return false;
   }
 
-  // ── DRAW ─────────────────────────────
+  draw(ctx) {
+    if (this.dead || !enemyImg.complete) return;
+
+    ctx.drawImage(enemyImg, this.x, this.y, this.w, this.h);
+
+    Utils.healthBar(ctx, this.x, this.y - 8, this.w, 5, this.hp / this.maxHp);
+  }
+}
+
+
+// ─── BOSS ENEMY ─────────────────────────────────────────
+class BossEnemy extends Enemy {
+  constructor(x, y) {
+    super(x, y, 'orc');
+
+    this.maxHp = 300;
+    this.hp = this.maxHp;
+
+    this.w = 160;
+    this.h = 140;
+
+    this.phase = 1;
+    this.attackTimer = 0;
+    this.wasInAir = false;
+  }
+
+  update(player, platforms) {
+    if (this.dead) return;
+
+    const dx = player.x - this.x;
+    const dist = Math.abs(dx);
+
+    if (this.hp < this.maxHp / 2) this.phase = 2;
+
+    if (this.attackTimer > 0) this.attackTimer--;
+
+    if (this.phase === 1) {
+      this.vx = Math.sign(dx) * 1.5;
+
+      if (dist < 120 && this.attackTimer === 0 && this.onGround) {
+        this.vy = -12;
+        this.attackTimer = 60;
+        this.state = 'smash';
+        this.wasInAir = true;
+      }
+
+    } else {
+      this.vx = Math.sign(dx) * 3;
+
+      if (this.attackTimer === 0) {
+        this.vx = Math.sign(dx) * 8;
+        this.attackTimer = 80;
+      }
+    }
+
+    Physics.applyGravity(this);
+    Physics.moveAndCollide(this, platforms);
+
+    // 💥 Smash landing
+    if (this.state === 'smash' && this.onGround && this.wasInAir) {
+      this.wasInAir = false;
+
+      Utils.spawnBlood(this.x + this.w / 2, this.y + this.h);
+      Game.screenShake(10);
+
+      if (Math.abs(player.x - this.x) < 120) {
+        player.takeDamage(20, this.x);
+      }
+    }
+
+    // Contact damage
+    if (Utils.rectsOverlap(this.hitbox, player.hitbox)) {
+      player.takeDamage(25, this.x);
+    }
+  }
+
   draw(ctx) {
     if (this.dead) return;
 
-    // 🔥 Ensure image loaded
-    if (!enemyImg.complete) return;
-
-    // 🔥 DEBUG (you can remove later)
-    // ctx.fillStyle = "red";
-    // ctx.fillRect(this.x, this.y, this.w, this.h);
-
-    // 🔥 Draw GIF
-    ctx.drawImage(
-      enemyImg,
-      this.x,
-      this.y,
-      this.w,
-      this.h
-    );
-
-    // Hurt flash
-    if (this.hurtTimer > 0 && Math.floor(this.hurtTimer / 3) % 2 === 0) {
-      ctx.save();
-      ctx.globalAlpha = 0.4;
-      ctx.fillStyle = '#fff';
+    if (bossImg.complete) {
+      ctx.drawImage(
+        bossImg,
+        this.x - 20,
+        this.y - 20,
+        this.w + 40,
+        this.h + 40
+      );
+    } else {
+      ctx.fillStyle = "purple";
       ctx.fillRect(this.x, this.y, this.w, this.h);
-      ctx.restore();
     }
 
-    // Health bar
+    // Hurt flash
+    if (this.hurtTimer > 0) {
+      ctx.fillStyle = "rgba(255,255,255,0.3)";
+      ctx.fillRect(this.x, this.y, this.w, this.h);
+    }
+
+    // Boss health bar
     Utils.healthBar(
       ctx,
       this.x,
-      this.y - 8,
+      this.y - 12,
       this.w,
-      5,
-      this.hp / this.maxHp,
-      '#e84040',
-      '#2a0000'
+      6,
+      this.hp / this.maxHp
     );
-
-    // Sleep indicator
-    if (this.state === 'patrol') {
-      ctx.font = "8px 'Press Start 2P'";
-      ctx.fillStyle = '#aaa';
-      ctx.textAlign = 'center';
-      ctx.fillText('z', this.x + this.w / 2, this.y - 14);
-    }
   }
 }
