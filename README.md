@@ -51,7 +51,7 @@ The game features multiple screens (start, settings, gameplay, victory, etc.), r
 │
 ├── assets/           # Game assets (images, sprites)
 │   ├── pmob.gif
-│   └── boss.webp
+│   └── The_Man_From_The_Shadow_29.webp
 │
 └── js/               # Modular game logic
     ├── utils.js      # Helper functions
@@ -75,7 +75,7 @@ The game features multiple screens (start, settings, gameplay, victory, etc.), r
 | Move Left  | ← Arrow / A     |
 | Move Right | → Arrow / D     |
 | Jump       | ↑ Arrow / Space |
-| Attack     | J / Click       |
+| Attack     | Ctrl / Click       |
 | Pause      | ⏸ Button        |
 
 ---
