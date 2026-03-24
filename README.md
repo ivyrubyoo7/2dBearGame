@@ -105,13 +105,13 @@ The game features multiple screens (start, settings, gameplay, victory, etc.), r
 1. Clone the repository:
 
 ```
-git clone https://github.com/your-username/your-repo-name.git
+git clone https://github.com/ivyrubyoo7/2dBearGame.git
 ```
 
 2. Open the folder:
 
 ```
-cd your-repo-name
+cd 2dBearGame
 ```
 
 3. Run using Live Server or simply open:
